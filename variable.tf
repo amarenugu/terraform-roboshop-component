@@ -16,3 +16,7 @@ variable "component" {
 variable "domain_name" {
     default = "ammienugu.online"
 }
+
+variable "rule_priority" {
+    
+}
