@@ -110,17 +110,16 @@ resource "aws_lb_target_group" "main" {
     healthy_threshold   = 2
     interval            = 10
     matcher             = "200-299"
-    path                = "/health"
-    port                = 8080
+    path                = var.component == "frontend" ? "/" : "/health"
+    port                = var.component == "frontend" ? "80" : "8080"
     protocol            = "HTTP"
     timeout             = 5
     unhealthy_threshold = 2
-
   }
 }
 
 resource "aws_autoscaling_group" "main" {
-  name                      = "${local.common_name}-main"
+  name                      = "${local.common_name}"
   max_size                  = 10
   min_size                  = 1
   health_check_grace_period = 120
@@ -162,10 +161,7 @@ resource "aws_autoscaling_group" "main" {
   timeouts {
     delete = "15m"
   }
-
 }
-
-
 
 resource "aws_autoscaling_policy" "main" {
   autoscaling_group_name        = aws_autoscaling_group.main.name
@@ -174,9 +170,8 @@ resource "aws_autoscaling_policy" "main" {
   estimated_instance_warmup     = 120
   target_tracking_configuration {
     predefined_metric_specification {
-        predefined_metric_type = "ASGAverageCPUUtilization"
-        
-      }
+      predefined_metric_type = "ASGAverageCPUUtilization"
+    }
 
       target_value = 75.0
   }
@@ -198,15 +193,14 @@ resource "aws_lb_listener_rule" "main" {
   }
 }
 
-#Executes where terraform is running
-/*resource "terraform_data" "main_delete" {
+resource "terraform_data" "main_delete" {
     triggers_replace =[
         aws_instance.main.id
     ]
     depends_on  = [aws_autoscaling_policy.main]
 
+    #Executes where terraform is running
     provisioner "local-exec" {
         command = "aws ec2 terminate-instances --instance-ids ${aws_instance.main.id}"
     }
 }
-*/
