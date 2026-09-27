@@ -4,14 +4,12 @@ resource "aws_instance" "main" {
     vpc_security_group_ids  = [local.sg_id]
     subnet_id               = local.private_subnet_id
     key_name                = "roboshop-key-rsa"
-    
     tags = merge (
         {
             Name =  "${local.common_name}" #roboshop-dev-catalogue
         },
         local.common_tags
     )
-
 }
 
 resource "terraform_data" "main" {
@@ -26,7 +24,6 @@ resource "terraform_data" "main" {
         password    = "DevOps321"
         host        = aws_instance.main.private_ip
     }
-
     provisioner "file" {
         source      = "bootstrap.sh"
         destination = "/tmp/bootstrap.sh"
@@ -40,7 +37,6 @@ resource "terraform_data" "main" {
     }
 }
 
-
 resource "aws_ec2_instance_state" "main" {
   instance_id   = aws_instance.main.id
   state         = "stopped" 
@@ -51,7 +47,6 @@ resource "aws_ami_from_instance" "main" {
   name               = "${local.common_name}-${var.app_version}-${aws_instance.main.id}" #roboshop-dev-catalogue-v3-id
   source_instance_id = aws_instance.main.id
   depends_on         = [aws_ec2_instance_state.main]
-
     tags = merge (
         {
             Name =  "${local.common_name}-${var.app_version}-${aws_instance.main.id}"
@@ -62,13 +57,15 @@ resource "aws_ami_from_instance" "main" {
 
 resource "aws_launch_template" "main" {
   name = "${local.common_name}"
+
   image_id = aws_ami_from_instance.main.id #AMI ID
   instance_initiated_shutdown_behavior = "terminate"
   instance_type = "t3.micro"
   key_name = "roboshop-key-rsa"
   vpc_security_group_ids = [local.sg_id]
   update_default_version = true
-
+  
+  # Once Instances are created, these will become instance tags
   tag_specifications {
     resource_type = "instance"
 
@@ -81,6 +78,7 @@ resource "aws_launch_template" "main" {
   }
 
   tag_specifications {
+    
     resource_type = "volume"
 
     tags = merge (
@@ -99,9 +97,10 @@ resource "aws_launch_template" "main" {
     )
 }
 
+
 resource "aws_lb_target_group" "main" {
-  name                  = "${local.common_name}-main"
-  port                  = 8080
+  name                  = "${local.common_name}"
+  port                  = var.component == "frontend" ? "80" : "8080"
   protocol              = "HTTP"
   vpc_id                = local.vpc_id
   deregistration_delay  = 30
@@ -133,6 +132,7 @@ resource "aws_autoscaling_group" "main" {
   }
 
   vpc_zone_identifier       = [local.private_subnet_id]
+  
   target_group_arns         = [aws_lb_target_group.main.arn] #Autoscaling launches into specific target group
 
   instance_refresh {
@@ -193,7 +193,7 @@ resource "aws_lb_listener_rule" "main" {
   }
 }
 
-resource "terraform_data" "main_delete" {
+/*resource "terraform_data" "main_delete" {
     triggers_replace =[
         aws_instance.main.id
     ]
@@ -203,4 +203,4 @@ resource "terraform_data" "main_delete" {
     provisioner "local-exec" {
         command = "aws ec2 terminate-instances --instance-ids ${aws_instance.main.id}"
     }
-}
+}*/
