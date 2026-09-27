@@ -20,8 +20,8 @@ resource "terraform_data" "main" {
     connection {
         type        = "ssh"
         user        = "ec2-user"
-        #private_key = file("~/.ssh/roboshop-rsa")
-        password    = "DevOps321"
+        private_key = file("~/.ssh/roboshop-rsa")
+        #password    = "DevOps321"
         host        = aws_instance.main.private_ip
     }
     provisioner "file" {
