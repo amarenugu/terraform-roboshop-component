@@ -3,7 +3,7 @@ resource "aws_instance" "main" {
     instance_type           = "t3.micro"
     vpc_security_group_ids  = [local.sg_id]
     subnet_id               = local.private_subnet_id
-    key_name                = "roboshop-key-rsa"
+    #key_name                = "roboshop-key-rsa"
     tags = merge (
         {
             Name =  "${local.common_name}" #roboshop-dev-catalogue
@@ -20,8 +20,8 @@ resource "terraform_data" "main" {
     connection {
         type        = "ssh"
         user        = "ec2-user"
-        private_key = file("~/.ssh/roboshop-rsa")
-        #password    = "DevOps321"
+        #private_key = file("~/.ssh/roboshop-rsa")
+        password    = "DevOps321"
         host        = aws_instance.main.private_ip
     }
     provisioner "file" {
